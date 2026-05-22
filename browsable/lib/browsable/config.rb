@@ -121,32 +121,58 @@ module Browsable
 
     private
 
-    # Read `allow_browser`/`allow_browsers` from the host app's
+    # Read the `allow_browser`/`allow_browsers` policy from the host app's
     # ApplicationController.
     #
     # The spec's ideal is to boot a minimal Rails environment and read the
     # resolved policy. That is slow and fragile (load-order, version skew), so
     # v0.1 statically parses application_controller.rb instead — fast, robust,
-    # and accurate for the common `allow_browser versions: :modern` form.
+    # and accurate for the forms developers actually write.
     #
-    # Commented-out lines are skipped: a developer who comments the policy out
-    # has deliberately disabled it, and browsable must not resurrect it.
-    # TODO(v0.2): optionally boot Rails for an exact policy when a Hash is used.
+    # Returns one of:
+    #   * a Symbol  — a named policy, e.g. :modern
+    #   * a Hash    — an explicit { browser => "version" } map
+    #   * nil       — no (uncommented) allow_browser call was found
+    #
+    # Comments are stripped before matching: a developer who comments the
+    # policy out has deliberately disabled it, and browsable must not
+    # resurrect it. The whole file is read at once because a versions hash
+    # may span several lines.
+    # TODO(v0.2): optionally boot Rails for a fully-resolved policy.
     def detect_allow_browser_policy
       controller = File.join(root, "app/controllers/application_controller.rb")
       return nil unless File.file?(controller)
 
-      # Matches: allow_browser versions: :modern   /   allow_browsers :modern
-      pattern = /allow_browsers?\s+(?:versions:\s*)?:(\w+)/
-      File.foreach(controller) do |line|
-        next if line =~ /\A\s*#/      # skip fully commented-out lines
-        code = line.sub(/#.*\z/, "")  # ignore any trailing comment
+      code = File.read(controller).gsub(/#[^\n]*/, "") # drop every comment
+      return nil unless code.match?(/\ballow_browsers?\b/)
 
-        return Regexp.last_match(1).to_sym if code.match(pattern)
+      call = code[/\ballow_browsers?\b.*/m]
+
+      if (match = call.match(/versions:\s*\{([^{}]*)\}/m))
+        parse_versions_hash(match[1])                      # versions: { ... }
+      elsif (match = call.match(/versions:\s*:(\w+)/))
+        match[1].to_sym                                    # versions: :modern
+      elsif (match = call.match(/\Aallow_browsers?\s+:(\w+)/))
+        match[1].to_sym                                    # allow_browsers :modern
       end
-      nil
     rescue StandardError
       nil
+    end
+
+    # Parse the body of a Rails `allow_browser versions: { ... }` hash into a
+    # { "browser" => "version" } map.
+    #
+    # A browser mapped to `false` (blocked) or `true` (any version) carries no
+    # version floor, so it is left out of the target entirely — there is
+    # nothing to check a numeric requirement against.
+    def parse_versions_hash(body)
+      versions = {}
+      body.scan(/(\w+)\s*:\s*([0-9][0-9.]*|true|false)/) do |browser, value|
+        next unless value.match?(/\A[0-9]/)
+
+        versions[browser] = value
+      end
+      versions.empty? ? nil : versions
     end
   end
 end

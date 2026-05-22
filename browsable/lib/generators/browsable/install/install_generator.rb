@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "rails/generators/base"
+require "browsable"
 
 module Browsable
   module Generators
@@ -51,10 +52,13 @@ module Browsable
       # not run them as generator steps.
 
       def detected_comment
-        if allow_browser_policy
-          "# Detected: ApplicationController uses `allow_browser versions: :#{allow_browser_policy}`"
-        else
+        case allow_browser_policy
+        when nil
           "# (No allow_browser call detected in ApplicationController.)"
+        when Hash
+          "# Detected: ApplicationController declares an explicit allow_browser versions hash."
+        else
+          "# Detected: ApplicationController uses `allow_browser versions: :#{allow_browser_policy}`"
         end
       end
 
@@ -66,15 +70,12 @@ module Browsable
         options[:minimal]
       end
 
+      # Reuse the core gem's detector so the generator and the CLI agree on
+      # exactly which allow_browser forms (symbol, hash, commented-out) count.
       def allow_browser_policy
         return @allow_browser_policy if defined?(@allow_browser_policy)
 
-        controller = File.join(destination_root, "app/controllers/application_controller.rb")
-        @allow_browser_policy =
-          if File.file?(controller) &&
-             (match = File.read(controller).match(/allow_browsers?\s+(?:versions:\s*)?:(\w+)/))
-            match[1]
-          end
+        @allow_browser_policy = Browsable::Config.load(root: destination_root).detected_policy
       end
     end
   end

@@ -271,10 +271,13 @@ module Browsable
       )
       policy = Config.load(root: Dir.pwd).detected_policy
       comment =
-        if policy
-          "# Detected: ApplicationController uses `allow_browser versions: :#{policy}`"
-        else
+        case policy
+        when nil
           "# (No allow_browser call detected — browsable will fall back to browserslist defaults.)"
+        when Hash
+          "# Detected: ApplicationController declares an explicit allow_browser versions hash."
+        else
+          "# Detected: ApplicationController uses `allow_browser versions: :#{policy}`"
         end
 
       ERB.new(File.read(template_path), trim_mode: "-")

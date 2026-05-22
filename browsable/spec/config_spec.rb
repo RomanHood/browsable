@@ -25,6 +25,28 @@ RSpec.describe Browsable::Config do
     end
   end
 
+  it "infers the target from a multi-line allow_browser versions hash" do
+    Dir.mktmpdir do |root|
+      controller = File.join(root, "app/controllers/application_controller.rb")
+      FileUtils.mkdir_p(File.dirname(controller))
+      File.write(controller, <<~RUBY)
+        class ApplicationController < ActionController::Base
+          allow_browser versions: {
+            safari: 16.4,
+            firefox: 121,
+            ie: false
+          }
+        end
+      RUBY
+
+      config = described_class.load(root: root)
+      # `ie: false` is blocked, so it carries no version floor and is dropped.
+      expect(config.detected_policy).to eq("safari" => "16.4", "firefox" => "121")
+      expect(config.target.minimum_version("safari")).to eq("16.4")
+      expect(config.target.minimum_version("ie")).to be_nil
+    end
+  end
+
   it "ignores an allow_browser line that is commented out" do
     Dir.mktmpdir do |root|
       controller = File.join(root, "app/controllers/application_controller.rb")
