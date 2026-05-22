@@ -130,17 +130,31 @@ module Browsable
       Target::MODERN.keys - detected_policy.keys
     end
 
-    # Informational caveats about the resolved target. The key one explains how
-    # Rails treats browsers absent from an explicit allow_browser hash, so the
-    # user is never left guessing what happens to the browsers they omitted.
+    # Informational caveats about the resolved target — so the user is never
+    # left guessing why a particular set of browsers is (or isn't) audited.
     def target_notes
-      return [] if unconstrained_browsers.empty?
+      notes = []
+      inferring = data.dig("target", "source") == "allow_browsers"
 
-      pinned = detected_policy.keys.join(", ")
-      omitted = unconstrained_browsers.join(", ")
-      ["Your allow_browser policy pins a version only for #{pinned}. Rails leaves every " \
-       "browser you don't list (#{omitted}) allowed at any version, so browsable audits " \
-       "only #{pinned}. Add a `target:` block to config/browsable.yml to audit the others."]
+      # No allow_browser policy at all — explain the browserslist defaults fallback.
+      if inferring && detected_policy.nil? && policy_note.nil?
+        notes << "No allow_browser policy was found in ApplicationController, so browsable " \
+                 "is auditing against the browserslist `defaults` baseline. Add an " \
+                 "allow_browser call, or set `target:` in config/browsable.yml, to pick the " \
+                 "browsers to audit against explicitly."
+      end
+
+      # A partial hash policy — explain the browsers Rails leaves unconstrained.
+      if unconstrained_browsers.any?
+        pinned = detected_policy.keys.join(", ")
+        omitted = unconstrained_browsers.join(", ")
+        notes << "Your allow_browser policy pins a version only for #{pinned}. Rails leaves " \
+                 "every browser you don't list (#{omitted}) allowed at any version, so " \
+                 "browsable audits only #{pinned}. Add a `target:` block to " \
+                 "config/browsable.yml to audit the others."
+      end
+
+      notes
     end
 
     # True when an explicit config file was found and loaded.

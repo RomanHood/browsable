@@ -18,7 +18,10 @@ module Browsable
       "safari" => "17.2", "opera" => "106"
     }.freeze
 
-    # A conservative fallback used when nothing else is known.
+    # browsable's built-in approximation of the browserslist `defaults` query —
+    # a frozen snapshot, used only as a last resort when the `browserslist` CLI
+    # is not installed (so live caniuse data cannot be queried) and there is no
+    # policy or explicit target. #note flags whenever this fallback is in play.
     DEFAULTS = {
       "chrome" => "109", "edge" => "109", "firefox" => "115", "safari" => "15.6"
     }.freeze
@@ -58,6 +61,9 @@ module Browsable
     def initialize(query, resolved: nil)
       @query = query
       @resolved = resolved
+      # How #browsers was obtained: :explicit (a caller supplied it, e.g. a
+      # Rails policy), :browserslist (the CLI), or :builtin (the frozen table).
+      @resolved_via = resolved ? :explicit : nil
     end
 
     # The resolved minimum versions, e.g. { "chrome" => "120", ... }.
@@ -88,14 +94,38 @@ module Browsable
 
     def to_s = query.to_s
 
+    # How #browsers was resolved: :explicit, :browserslist, or :builtin.
+    def resolved_via
+      browsers # force resolution
+      @resolved_via
+    end
+
+    # A caveat about this target's accuracy, or nil. Set when browsable had to
+    # fall back to its built-in table instead of querying live browserslist data.
+    def note
+      return nil unless resolved_via == :builtin
+      return nil if query.to_s.strip.downcase == "modern" # the builtin :modern set is exact
+
+      "The versions above are browsable's built-in approximation — the `browserslist` " \
+        "CLI is not installed, so live browser-share data could not be queried. Install " \
+        "it (npm install -g browserslist) or set an explicit `target:` in " \
+        "config/browsable.yml for accurate, stable versions."
+    end
+
     def as_json
-      { query: query.to_s, browsers: browsers }
+      { query: query.to_s, browsers: browsers, resolved_via: resolved_via }
     end
 
     private
 
     def resolve
-      from_browserslist_cli || builtin_fallback
+      if (from_cli = from_browserslist_cli)
+        @resolved_via = :browserslist
+        from_cli
+      else
+        @resolved_via = :builtin
+        builtin_fallback
+      end
     end
 
     # Shell out to the `browserslist` CLI when available. It emits one

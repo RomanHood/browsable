@@ -31,7 +31,7 @@ module Browsable
           browsers = target.browsers.map { |name, version| "#{name} #{version}" }.join(", ")
           lines << pastel.dim("target: #{target.query}  (#{browsers})")
         end
-        lines << pastel.dim("config: #{report.config_file || 'inferred defaults (no config file)'}")
+        lines << pastel.dim("config: #{report.config_file || 'none (no config file)'}")
         lines.join("\n") + "\n"
       end
 

@@ -47,6 +47,18 @@ RSpec.describe Browsable::Config do
     end
   end
 
+  it "notes the browserslist defaults fallback when no allow_browser policy exists" do
+    Dir.mktmpdir do |root|
+      controller = File.join(root, "app/controllers/application_controller.rb")
+      FileUtils.mkdir_p(File.dirname(controller))
+      File.write(controller, "class ApplicationController < ActionController::Base\nend\n")
+
+      config = described_class.load(root: root)
+      expect(config.detected_policy).to be_nil
+      expect(config.target_notes.join).to match(/browserslist `defaults`/)
+    end
+  end
+
   it "explains that browsers omitted from an allow_browser hash are unconstrained" do
     Dir.mktmpdir do |root|
       controller = File.join(root, "app/controllers/application_controller.rb")

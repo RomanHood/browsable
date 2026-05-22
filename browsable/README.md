@@ -161,6 +161,18 @@ prints a note naming the rest. To audit against more, set an explicit `target:`
 in `config/browsable.yml`. The same note-and-fall-back-to-`defaults` behaviour
 applies when browsable cannot resolve your policy statically.
 
+### Where `defaults` comes from
+
+When there is no `allow_browser` policy at all, browsable audits against the
+[browserslist](https://github.com/browserslist/browserslist) `defaults` query —
+the "reasonable broad support" baseline the wider frontend ecosystem uses. It is
+resolved **live** from caniuse data when the `browserslist` CLI is installed
+(`npm install -g browserslist`); otherwise browsable uses a small **built-in
+approximation** and says so in a note. Either way these versions are *not* a
+Rails concept — Rails blocks nothing unless you call `allow_browser` — and they
+are not derived from stylelint or eslint. For a precise, stable target, set
+`target:` in `config/browsable.yml`.
+
 ## Rake tasks
 
 Inside a Rails app, the railtie registers:

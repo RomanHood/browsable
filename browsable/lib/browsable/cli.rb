@@ -121,6 +121,7 @@ module Browsable
         caveats << config.policy_note if config.policy_note
         caveats.concat(config.target_notes)
       end
+      caveats << resolved.note if resolved.note
 
       if json_output?
         puts JSON.pretty_generate(
@@ -177,6 +178,9 @@ module Browsable
         notes << config.policy_note if config.policy_note
         notes.concat(config.target_notes)
       end
+      # How the target itself resolved (e.g. a built-in fallback) is relevant
+      # even when --target was passed.
+      notes << target.note if target.note
 
       Report.new(findings: findings, skips: skips, notes: notes, target: target,
                  root: root, config_file: config.config_file)
