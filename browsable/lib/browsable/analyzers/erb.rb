@@ -34,11 +34,11 @@ module Browsable
       # --- feature extraction --------------------------------------------------
 
       def extract_usages(source)
-        usages = herb_usages(source)
-        # Fall back to a coarse line scan only when Herb is unavailable or its
-        # AST shape isn't what we expect. This is not a from-scratch HTML parser
-        # — it is a degraded scan so a bare environment still gets a useful audit.
-        usages && !usages.empty? ? usages : scan_usages(source)
+        # Trust Herb's result, including an empty one: a template with no HTML
+        # (all-ERB partials, comment-only files) legitimately yields no usages.
+        # The coarse scan runs *only* when Herb actually raises — e.g. the gem
+        # is somehow missing — never because Herb returned nothing.
+        herb_usages(source)
       rescue StandardError
         scan_usages(source)
       end
@@ -116,11 +116,13 @@ module Browsable
       end
 
       # Degraded extraction: a line-by-line scan for opening tags and bare
-      # attribute names. Noise is harmless — only names present in the BCD
-      # snapshot survive the lookup in #build_finding.
+      # attribute names. Noise is mostly harmless — only names present in the
+      # BCD snapshot survive the lookup in #build_finding — but ERB tags must be
+      # blanked first so Ruby code and comment prose are never read as markup.
+      # Blanking (rather than deleting) preserves line and column numbers.
       def scan_usages(source)
         usages = []
-        source.each_line.with_index(1) do |line, number|
+        erb_blanked(source).each_line.with_index(1) do |line, number|
           line.scan(/<([a-zA-Z][a-zA-Z0-9-]*)/) do
             usages << Usage.new(kind: :element, name: Regexp.last_match(1).downcase,
                                 line: number, column: (Regexp.last_match.begin(1) || 0))
@@ -131,6 +133,13 @@ module Browsable
           end
         end
         usages
+      end
+
+      # Replace every ERB tag (<% %>, <%= %>, <%# %>) with spaces, keeping
+      # newlines so line/column positions are unchanged. The contents of an ERB
+      # tag — Ruby code or comment text — are never HTML.
+      def erb_blanked(source)
+        source.gsub(/<%.*?%>/m) { |tag| tag.gsub(/[^\n]/, " ") }
       end
 
       # --- compat lookup -------------------------------------------------------
@@ -224,12 +233,16 @@ module Browsable
 
         case category
         when "below_target"
-          parts = below.map do |browser|
-            req = required[browser]
-            floor = target.minimum_version(browser)
-            req ? "#{titleize(browser)} #{req}+ (target permits #{floor})" : "#{titleize(browser)} (no support)"
+          clauses = below.map do |browser|
+            name = titleize(browser)
+            required_version = required[browser]
+            if required_version
+              "needs #{name} #{required_version}+, but your target allows #{name} #{target.minimum_version(browser)}"
+            else
+              "is not supported by #{name} at any version"
+            end
           end
-          "#{label} is not supported across your target — it requires #{parts.join(', ')}."
+          "#{label} #{clauses.join('; ')}."
         when "baseline_limited"
           "#{label} has limited availability (not Baseline) — provide a fallback."
         else

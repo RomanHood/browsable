@@ -25,6 +25,21 @@ RSpec.describe Browsable::Config do
     end
   end
 
+  it "ignores an allow_browser line that is commented out" do
+    Dir.mktmpdir do |root|
+      controller = File.join(root, "app/controllers/application_controller.rb")
+      FileUtils.mkdir_p(File.dirname(controller))
+      File.write(controller, <<~RUBY)
+        class ApplicationController < ActionController::Base
+          # allow_browser versions: :modern
+        end
+      RUBY
+
+      config = described_class.load(root: root)
+      expect(config.detected_policy).to be_nil
+    end
+  end
+
   it "merges a config file over the defaults" do
     Dir.mktmpdir do |root|
       File.write(File.join(root, ".browsable.yml"), "severity:\n  below_target: warning\n")

@@ -26,6 +26,17 @@ RSpec.describe Browsable::Analyzers::ERB do
     expect(search&.severity).to eq(:warning)
   end
 
+  it "ignores HTML-like words inside ERB comments and code" do
+    source = <<~ERB
+      <%# Calendar widget slot. The dispatch is a 1:1 symbol mapping;
+          each window has its own partial. %>
+      <% rows = Holiday::Window.for(brand) %>
+      <%= render "shared/widget", rows: rows %>
+    ERB
+
+    expect(analyzer.analyze_source(source, file: "/x.html.erb")).to be_empty
+  end
+
   it "respects the ignore.features list" do
     Dir.mktmpdir do |root|
       File.write(File.join(root, ".browsable.yml"),

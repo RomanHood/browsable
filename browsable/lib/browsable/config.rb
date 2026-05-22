@@ -128,16 +128,23 @@ module Browsable
     # resolved policy. That is slow and fragile (load-order, version skew), so
     # v0.1 statically parses application_controller.rb instead — fast, robust,
     # and accurate for the common `allow_browser versions: :modern` form.
+    #
+    # Commented-out lines are skipped: a developer who comments the policy out
+    # has deliberately disabled it, and browsable must not resurrect it.
     # TODO(v0.2): optionally boot Rails for an exact policy when a Hash is used.
     def detect_allow_browser_policy
       controller = File.join(root, "app/controllers/application_controller.rb")
       return nil unless File.file?(controller)
 
-      source = File.read(controller)
       # Matches: allow_browser versions: :modern   /   allow_browsers :modern
-      if (m = source.match(/allow_browsers?\s+(?:versions:\s*)?:(\w+)/))
-        m[1].to_sym
+      pattern = /allow_browsers?\s+(?:versions:\s*)?:(\w+)/
+      File.foreach(controller) do |line|
+        next if line =~ /\A\s*#/      # skip fully commented-out lines
+        code = line.sub(/#.*\z/, "")  # ignore any trailing comment
+
+        return Regexp.last_match(1).to_sym if code.match(pattern)
       end
+      nil
     rescue StandardError
       nil
     end
