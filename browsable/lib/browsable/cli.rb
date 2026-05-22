@@ -182,8 +182,13 @@ module Browsable
       # even when --target was passed.
       notes << target.note if target.note
 
-      Report.new(findings: findings, skips: skips, notes: notes, target: target,
-                 root: root, config_file: config.config_file)
+      # The full policy landscape — every allow_browser callsite across the
+      # app's controllers, not just ApplicationController. Skipped for `check`,
+      # which audits specific files for editor integration.
+      policies = file_list ? [] : PolicyScanner.call(root)
+
+      Report.new(findings: findings, skips: skips, notes: notes, policies: policies,
+                 target: target, root: root, config_file: config.config_file)
     end
 
     def collect_importmap(root:, config:, files_by_kind:, skips:)

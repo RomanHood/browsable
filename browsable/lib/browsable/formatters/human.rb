@@ -16,7 +16,8 @@ module Browsable
       end
 
       def render
-        sections = [header, notes, body, skips, summary, policy_suggestion].reject(&:empty?)
+        sections = [header, notes, body, skips, summary,
+                    controller_policies, policy_suggestion].reject(&:empty?)
         sections.join("\n")
       end
 
@@ -101,6 +102,45 @@ module Browsable
         end
         lines << pastel.dim("  Or address it in the code instead — browsable reports, you decide.")
         lines.join("\n") + "\n"
+      end
+
+      # The policy landscape: every allow_browser callsite found across the
+      # app's controllers. Shown only when there is more than one policy, or a
+      # policy somewhere other than ApplicationController — otherwise the
+      # `target:` line in the header already says everything.
+      def controller_policies
+        policies = report.policies
+        return "" if policies.empty?
+        return "" if policies.size == 1 && policies.first.application_controller?
+
+        lines = [pastel.bold("Browser policies (#{policies.size} allow_browser callsite(s) found)")]
+        policies.each { |policy| lines << "  #{describe_policy(policy)}" }
+        lines << ""
+        lines << pastel.dim("  The audit above ran against one target. CSS and importmap JS are served")
+        lines << pastel.dim("  globally, so a controller with a broader policy means those assets must")
+        lines << pastel.dim("  satisfy it too — re-audit with --target, or set `target:` in config, to check.")
+        lines.join("\n") + "\n"
+      end
+
+      def describe_policy(policy)
+        scope = policy.concern ? "#{policy.scope} (concern)" : policy.scope
+        scope = scope.ljust(34)
+        actions =
+          if policy.only then "  (only: #{policy.only.join(', ')})"
+          elsif policy.except then "  (except: #{policy.except.join(', ')})"
+          else ""
+          end
+        "#{scope}#{pastel.cyan(policy_versions_label(policy.result))}#{pastel.dim(actions)}"
+      end
+
+      def policy_versions_label(result)
+        if result.policy.is_a?(Hash)
+          "{ #{result.policy.map { |browser, version| "#{browser}: #{version}" }.join(', ')} }"
+        elsif result.policy
+          ":#{result.policy}"
+        else
+          result.note ? "(could not resolve)" : "(no versions:)"
+        end
       end
 
       def colorize(severity, text)

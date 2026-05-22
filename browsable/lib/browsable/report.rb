@@ -15,14 +15,18 @@ module Browsable
     # `bumps` maps each raised browser to { from:, to: }.
     Suggestion = Data.define(:line, :bumps)
 
-    attr_reader :findings, :skips, :notes, :target, :root, :config_file
+    attr_reader :findings, :skips, :notes, :policies, :target, :root, :config_file
 
     # @param notes [Array<String>] caveats about the run itself (e.g. a target
     #   that could not be inferred) — distinct from per-file findings.
-    def initialize(findings: [], skips: [], notes: [], target: nil, root: nil, config_file: nil)
+    # @param policies [Array<PolicyScanner::Policy>] every allow_browser callsite
+    #   discovered across the app's controllers — the policy landscape.
+    def initialize(findings: [], skips: [], notes: [], policies: [],
+                   target: nil, root: nil, config_file: nil)
       @findings = findings
       @skips = skips
       @notes = notes
+      @policies = policies
       @target = target
       @root = root
       @config_file = config_file
@@ -79,11 +83,24 @@ module Browsable
         },
         findings: findings.map(&:as_json),
         skips: skips.map { |skip| { kind: skip.kind.to_s, reason: skip.reason } },
+        policies: policies.map { |policy| policy_as_json(policy) },
         suggested_policy: suggestion && { line: suggestion.line, bumps: suggestion.bumps }
       }
     end
 
     private
+
+    def policy_as_json(policy)
+      {
+        scope: policy.scope,
+        file: policy.file,
+        concern: policy.concern,
+        versions: policy.result.policy,
+        note: policy.result.note,
+        only: policy.only,
+        except: policy.except
+      }
+    end
 
     def build_suggestion
       return nil unless target

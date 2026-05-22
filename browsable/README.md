@@ -192,6 +192,25 @@ decide. The suggestion is derived from HTML/ERB findings, which carry exact
 version data; it also appears in `--json` (`suggested_policy`) and as a GitHub
 Actions notice.
 
+### Per-controller and per-action policies
+
+Rails lets any controller override `allow_browser`, and scope the override to
+certain actions with `only:`/`except:`. browsable scans every file under
+`app/controllers/` (including `concerns/`) and lists each `allow_browser` call
+it finds — its versions and any action scope — under **Browser policies** in the
+report.
+
+The audit itself runs against a single target (ApplicationController's policy,
+or your `config/browsable.yml`). browsable does **not** try to map each frontend
+asset to the exact endpoints — and policies — that serve it. CSS and importmap
+JavaScript are global assets, included via layout helpers on nearly every page,
+so they have no single owning controller action; a per-asset policy graph would
+be guesswork. Instead, browsable shows you the whole policy landscape: if a
+controller serves shared assets to a broader range of browsers than
+ApplicationController, audit against that policy explicitly with `--target` or
+`config/browsable.yml`. Per-action auditing of `app/views/<controller>/`
+templates against their controller's policy is a planned refinement.
+
 ## Rake tasks
 
 Inside a Rails app, the railtie registers:
