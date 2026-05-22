@@ -16,7 +16,7 @@ module Browsable
       end
 
       def render
-        sections = [header, notes, body, skips, summary].reject(&:empty?)
+        sections = [header, notes, body, skips, summary, policy_suggestion].reject(&:empty?)
         sections.join("\n")
       end
 
@@ -83,6 +83,24 @@ module Browsable
           colorize(:info, "#{i} info#{'s' unless i == 1}")
         ]
         pastel.bold("#{parts.join('  ')}  across #{report.findings_by_file.size} file(s)") + "\n"
+      end
+
+      # A copy-pasteable allow_browser line that raises the offending browsers
+      # to the versions the flagged code requires.
+      def policy_suggestion
+        suggestion = report.suggestion
+        return "" unless suggestion
+
+        lines = [pastel.bold("Suggested allow_browser policy")]
+        lines << pastel.dim("  Raises the minimums so every permitted browser can run the flagged code:")
+        lines << ""
+        lines << "    #{pastel.cyan(suggestion.line)}"
+        lines << ""
+        suggestion.bumps.each do |browser, change|
+          lines << pastel.dim("    #{browser}: #{change[:from]} → #{change[:to]}")
+        end
+        lines << pastel.dim("  Or address it in the code instead — browsable reports, you decide.")
+        lines.join("\n") + "\n"
       end
 
       def colorize(severity, text)

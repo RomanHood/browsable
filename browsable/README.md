@@ -173,6 +173,25 @@ Rails concept — Rails blocks nothing unless you call `allow_browser` — and t
 are not derived from stylelint or eslint. For a precise, stable target, set
 `target:` in `config/browsable.yml`.
 
+### Suggested `allow_browser` fix
+
+When an audit finds errors that are purely a version conflict — your code needs
+a browser version newer than your policy permits — browsable prints a ready-to-paste
+`allow_browser` line that raises *only* the offending browsers to the minimum
+those features require, leaving every other browser untouched:
+
+```
+Suggested allow_browser policy
+    allow_browser versions: { chrome: 120, edge: 120, firefox: 125, safari: 17.2, opera: 106 }
+    firefox: 121 → 125
+```
+
+It is a suggestion, not an instruction: tightening the policy is one fix, changing
+the code (a fallback, a `@supports` rule) is another. browsable reports; you
+decide. The suggestion is derived from HTML/ERB findings, which carry exact
+version data; it also appears in `--json` (`suggested_policy`) and as a GitHub
+Actions notice.
+
 ## Rake tasks
 
 Inside a Rails app, the railtie registers:

@@ -13,7 +13,14 @@ module Browsable
       end
 
       def render
-        @report.findings.map { |finding| annotation(finding) }.join("\n")
+        lines = @report.findings.map { |finding| annotation(finding) }
+
+        if (suggestion = @report.suggestion)
+          lines << "::notice title=#{escape_property('browsable: suggested allow_browser')}::" \
+                   "#{escape_data(suggestion.line)}"
+        end
+
+        lines.join("\n")
       end
 
       private
