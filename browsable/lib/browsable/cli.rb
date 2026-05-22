@@ -116,10 +116,11 @@ module Browsable
       resolved = resolve_target(config)
 
       if json_output?
-        puts JSON.pretty_generate(resolved.as_json)
+        puts JSON.pretty_generate(resolved.as_json.merge(note: config.policy_note))
       else
         puts pastel.bold("Target: #{resolved.query}")
         resolved.browsers.each { |browser, version| puts "  #{browser} >= #{version}" }
+        puts pastel.yellow("! #{config.policy_note}") if config.policy_note
       end
     end
 
@@ -156,7 +157,12 @@ module Browsable
         skips << Report::Skip.new(kind: kind, reason: "#{kind} analysis failed: #{e.message}")
       end
 
-      Report.new(findings: findings, skips: skips, target: target,
+      notes = []
+      # Surface a target that could not be inferred — unless the user has
+      # already overridden it on the command line.
+      notes << config.policy_note if config.policy_note && !options[:target]
+
+      Report.new(findings: findings, skips: skips, notes: notes, target: target,
                  root: root, config_file: config.config_file)
     end
 

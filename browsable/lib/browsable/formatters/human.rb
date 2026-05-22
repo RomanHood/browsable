@@ -16,7 +16,7 @@ module Browsable
       end
 
       def render
-        sections = [header, body, skips, summary].reject(&:empty?)
+        sections = [header, notes, body, skips, summary].reject(&:empty?)
         sections.join("\n")
       end
 
@@ -33,6 +33,15 @@ module Browsable
         end
         lines << pastel.dim("config: #{report.config_file || 'inferred defaults (no config file)'}")
         lines.join("\n") + "\n"
+      end
+
+      # Run-level caveats — most importantly, a target that could not be
+      # inferred. Shown right under the header so the target line above makes
+      # sense.
+      def notes
+        return "" if report.notes.empty?
+
+        report.notes.map { |note| pastel.yellow("! #{note}") }.join("\n") + "\n"
       end
 
       def body

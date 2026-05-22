@@ -11,11 +11,14 @@ module Browsable
     # A skipped unit of work, e.g. { kind: :css, reason: "stylelint missing" }.
     Skip = Data.define(:kind, :reason)
 
-    attr_reader :findings, :skips, :target, :root, :config_file
+    attr_reader :findings, :skips, :notes, :target, :root, :config_file
 
-    def initialize(findings: [], skips: [], target: nil, root: nil, config_file: nil)
+    # @param notes [Array<String>] caveats about the run itself (e.g. a target
+    #   that could not be inferred) — distinct from per-file findings.
+    def initialize(findings: [], skips: [], notes: [], target: nil, root: nil, config_file: nil)
       @findings = findings
       @skips = skips
+      @notes = notes
       @target = target
       @root = root
       @config_file = config_file
@@ -51,6 +54,7 @@ module Browsable
     def as_json
       {
         target: target&.as_json,
+        notes: notes,
         summary: {
           errors: errors.size,
           warnings: warnings.size,
