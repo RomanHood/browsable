@@ -1,0 +1,21 @@
+/*
+ * A stylesheet that deliberately uses a few modern CSS features so that
+ * `browsable` (via stylelint) has something concrete to report.
+ */
+
+.card:has(> .card__media) {
+  display: grid;
+  gap: 1rem;
+  container-type: inline-size;
+}
+
+.card {
+  aspect-ratio: 16 / 9;
+  inset: 0;
+}
+
+@container (min-width: 30rem) {
+  .card {
+    grid-template-columns: 1fr 2fr;
+  }
+}

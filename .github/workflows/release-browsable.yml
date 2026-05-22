@@ -1,0 +1,32 @@
+name: Release browsable
+
+# Publishes the core `browsable` gem to RubyGems when a tag like
+# `browsable-v0.1.0` is pushed. The tag prefix `browsable-v` does not match
+# `browsable-lsp-v*`, so the two gems release independently.
+on:
+  push:
+    tags:
+      - "browsable-v*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+          working-directory: browsable
+
+      # `rake build` + `gem push` rather than `rake release`: the tag already
+      # exists (it triggered this run), so re-tagging would fail.
+      - name: Build and publish to RubyGems
+        working-directory: browsable
+        env:
+          GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
+        run: |
+          bundle exec rake build
+          gem push pkg/*.gem

@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# The binary editors invoke. browsable-lsp speaks LSP over stdio, the standard
+# convention — there are no arguments to parse.
+
+require "browsable-lsp"
+
+Browsable::LSP::Server.new.start

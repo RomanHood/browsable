@@ -1,0 +1,341 @@
+{
+  "__meta": {
+    "source": "https://cdn.jsdelivr.net/npm/@mdn/browser-compat-data/data.json",
+    "generated_at": "2026-05-01T00:00:00Z",
+    "subtrees": ["html.elements", "html.global_attributes", "css.properties"],
+    "note": "A curated subset of MDN browser-compat-data. Regenerate with bin/update-bcd-snapshot."
+  },
+  "html": {
+    "elements": {
+      "dialog": {
+        "__compat": {
+          "mdn_url": "https://developer.mozilla.org/docs/Web/HTML/Element/dialog",
+          "status": { "baseline": "high" },
+          "support": {
+            "chrome": { "version_added": "37" },
+            "edge": { "version_added": "79" },
+            "firefox": { "version_added": "98" },
+            "safari": { "version_added": "15.4" }
+          }
+        }
+      },
+      "details": {
+        "__compat": {
+          "status": { "baseline": "high" },
+          "support": {
+            "chrome": { "version_added": "12" },
+            "edge": { "version_added": "79" },
+            "firefox": { "version_added": "49" },
+            "safari": { "version_added": "6" }
+          }
+        }
+      },
+      "summary": {
+        "__compat": {
+          "status": { "baseline": "high" },
+          "support": {
+            "chrome": { "version_added": "12" },
+            "edge": { "version_added": "79" },
+            "firefox": { "version_added": "49" },
+            "safari": { "version_added": "6" }
+          }
+        }
+      },
+      "search": {
+        "__compat": {
+          "mdn_url": "https://developer.mozilla.org/docs/Web/HTML/Element/search",
+          "status": { "baseline": "low" },
+          "support": {
+            "chrome": { "version_added": "118" },
+            "edge": { "version_added": "118" },
+            "firefox": { "version_added": "118" },
+            "safari": { "version_added": "17" }
+          }
+        }
+      },
+      "picture": {
+        "__compat": {
+          "status": { "baseline": "high" },
+          "support": {
+            "chrome": { "version_added": "38" },
+            "edge": { "version_added": "13" },
+            "firefox": { "version_added": "38" },
+            "safari": { "version_added": "9.1" }
+          }
+        }
+      },
+      "template": {
+        "__compat": {
+          "status": { "baseline": "high" },
+          "support": {
+            "chrome": { "version_added": "35" },
+            "edge": { "version_added": "13" },
+            "firefox": { "version_added": "22" },
+            "safari": { "version_added": "8" }
+          }
+        }
+      },
+      "slot": {
+        "__compat": {
+          "status": { "baseline": "high" },
+          "support": {
+            "chrome": { "version_added": "53" },
+            "edge": { "version_added": "79" },
+            "firefox": { "version_added": "63" },
+            "safari": { "version_added": "10.1" }
+          }
+        }
+      },
+      "datalist": {
+        "__compat": {
+          "status": { "baseline": "high" },
+          "support": {
+            "chrome": { "version_added": "20" },
+            "edge": { "version_added": "12" },
+            "firefox": { "version_added": "4" },
+            "safari": { "version_added": "12.1" }
+          }
+        }
+      },
+      "output": {
+        "__compat": {
+          "status": { "baseline": "high" },
+          "support": {
+            "chrome": { "version_added": "10" },
+            "edge": { "version_added": "13" },
+            "firefox": { "version_added": "6" },
+            "safari": { "version_added": "5.1" }
+          }
+        }
+      },
+      "meter": {
+        "__compat": {
+          "status": { "baseline": "high" },
+          "support": {
+            "chrome": { "version_added": "8" },
+            "edge": { "version_added": "13" },
+            "firefox": { "version_added": "16" },
+            "safari": { "version_added": "6" }
+          }
+        }
+      },
+      "progress": {
+        "__compat": {
+          "status": { "baseline": "high" },
+          "support": {
+            "chrome": { "version_added": "8" },
+            "edge": { "version_added": "12" },
+            "firefox": { "version_added": "6" },
+            "safari": { "version_added": "6" }
+          }
+        }
+      },
+      "canvas": {
+        "__compat": {
+          "status": { "baseline": "high" },
+          "support": {
+            "chrome": { "version_added": "4" },
+            "edge": { "version_added": "12" },
+            "firefox": { "version_added": "2" },
+            "safari": { "version_added": "3.1" }
+          }
+        }
+      },
+      "video": {
+        "__compat": {
+          "status": { "baseline": "high" },
+          "support": {
+            "chrome": { "version_added": "4" },
+            "edge": { "version_added": "12" },
+            "firefox": { "version_added": "3.5" },
+            "safari": { "version_added": "3.1" }
+          }
+        }
+      },
+      "audio": {
+        "__compat": {
+          "status": { "baseline": "high" },
+          "support": {
+            "chrome": { "version_added": "4" },
+            "edge": { "version_added": "12" },
+            "firefox": { "version_added": "3.5" },
+            "safari": { "version_added": "3.1" }
+          }
+        }
+      }
+    },
+    "global_attributes": {
+      "popover": {
+        "__compat": {
+          "mdn_url": "https://developer.mozilla.org/docs/Web/HTML/Global_attributes/popover",
+          "status": { "baseline": "low" },
+          "support": {
+            "chrome": { "version_added": "114" },
+            "edge": { "version_added": "114" },
+            "firefox": { "version_added": "125" },
+            "safari": { "version_added": "17" }
+          }
+        }
+      },
+      "inert": {
+        "__compat": {
+          "status": { "baseline": "high" },
+          "support": {
+            "chrome": { "version_added": "102" },
+            "edge": { "version_added": "102" },
+            "firefox": { "version_added": "112" },
+            "safari": { "version_added": "15.5" }
+          }
+        }
+      },
+      "loading": {
+        "__compat": {
+          "status": { "baseline": "high" },
+          "support": {
+            "chrome": { "version_added": "77" },
+            "edge": { "version_added": "79" },
+            "firefox": { "version_added": "75" },
+            "safari": { "version_added": "16.4" }
+          }
+        }
+      },
+      "enterkeyhint": {
+        "__compat": {
+          "status": { "baseline": "high" },
+          "support": {
+            "chrome": { "version_added": "77" },
+            "edge": { "version_added": "79" },
+            "firefox": { "version_added": "94" },
+            "safari": { "version_added": "13.1" }
+          }
+        }
+      },
+      "autocapitalize": {
+        "__compat": {
+          "status": { "baseline": "low" },
+          "support": {
+            "chrome": { "version_added": "43" },
+            "edge": { "version_added": "79" },
+            "firefox": { "version_added": "111" },
+            "safari": { "version_added": "5" }
+          }
+        }
+      },
+      "is": {
+        "__compat": {
+          "mdn_url": "https://developer.mozilla.org/docs/Web/HTML/Global_attributes/is",
+          "status": { "baseline": false },
+          "support": {
+            "chrome": { "version_added": "67" },
+            "edge": { "version_added": "79" },
+            "firefox": { "version_added": "63" },
+            "safari": { "version_added": false }
+          }
+        }
+      },
+      "contenteditable": {
+        "__compat": {
+          "status": { "baseline": "high" },
+          "support": {
+            "chrome": { "version_added": "4" },
+            "edge": { "version_added": "12" },
+            "firefox": { "version_added": "3" },
+            "safari": { "version_added": "3.1" }
+          }
+        }
+      },
+      "hidden": {
+        "__compat": {
+          "status": { "baseline": "high" },
+          "support": {
+            "chrome": { "version_added": "6" },
+            "edge": { "version_added": "12" },
+            "firefox": { "version_added": "4" },
+            "safari": { "version_added": "5" }
+          }
+        }
+      },
+      "draggable": {
+        "__compat": {
+          "status": { "baseline": "high" },
+          "support": {
+            "chrome": { "version_added": "4" },
+            "edge": { "version_added": "12" },
+            "firefox": { "version_added": "3.5" },
+            "safari": { "version_added": "6" }
+          }
+        }
+      }
+    }
+  },
+  "css": {
+    "properties": {
+      "aspect-ratio": {
+        "__compat": {
+          "status": { "baseline": "high" },
+          "support": {
+            "chrome": { "version_added": "88" },
+            "edge": { "version_added": "88" },
+            "firefox": { "version_added": "89" },
+            "safari": { "version_added": "15" }
+          }
+        }
+      },
+      "gap": {
+        "__compat": {
+          "status": { "baseline": "high" },
+          "support": {
+            "chrome": { "version_added": "84" },
+            "edge": { "version_added": "84" },
+            "firefox": { "version_added": "63" },
+            "safari": { "version_added": "14.1" }
+          }
+        }
+      },
+      "inset": {
+        "__compat": {
+          "status": { "baseline": "high" },
+          "support": {
+            "chrome": { "version_added": "87" },
+            "edge": { "version_added": "87" },
+            "firefox": { "version_added": "66" },
+            "safari": { "version_added": "14.1" }
+          }
+        }
+      },
+      "container-type": {
+        "__compat": {
+          "status": { "baseline": "low" },
+          "support": {
+            "chrome": { "version_added": "105" },
+            "edge": { "version_added": "105" },
+            "firefox": { "version_added": "110" },
+            "safari": { "version_added": "16" }
+          }
+        }
+      },
+      "accent-color": {
+        "__compat": {
+          "status": { "baseline": "high" },
+          "support": {
+            "chrome": { "version_added": "93" },
+            "edge": { "version_added": "93" },
+            "firefox": { "version_added": "92" },
+            "safari": { "version_added": "15.4" }
+          }
+        }
+      },
+      "text-wrap": {
+        "__compat": {
+          "status": { "baseline": "low" },
+          "support": {
+            "chrome": { "version_added": "114" },
+            "edge": { "version_added": "114" },
+            "firefox": { "version_added": "121" },
+            "safari": { "version_added": "17.4" }
+          }
+        }
+      }
+    }
+  }
+}

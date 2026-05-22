@@ -1,0 +1,9 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+# Dependencies are declared in browsable-lsp.gemspec.
+gemspec
+
+# Develop against the core gem from this monorepo, not the published release.
+gem "browsable", path: "../browsable"

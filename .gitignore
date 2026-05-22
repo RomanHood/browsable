@@ -1,0 +1,21 @@
+# Build artifacts
+pkg/
+*.gem
+
+# Bundler
+.bundle/
+vendor/bundle/
+
+# Gemfile.lock is not committed for gems — each gem resolves against the
+# host project's dependency set.
+**/Gemfile.lock
+
+# Temp / scratch
+tmp/
+.browsable-cache/
+
+# Editor / OS
+.DS_Store
+*.swp
+.idea/
+.vscode/

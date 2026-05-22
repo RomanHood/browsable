@@ -1,0 +1,11 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+# A minimal Rails 8 app using Propshaft + importmaps and no package.json.
+gem "rails", "~> 8.0"
+gem "propshaft"
+gem "importmap-rails"
+
+# Audit this app with the local checkout of browsable from this monorepo.
+gem "browsable", path: "../../browsable"

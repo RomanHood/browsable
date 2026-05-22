@@ -1,0 +1,133 @@
+*browsable.txt*  Browser-compatibility audit for Rails projects via LSP
+
+Author:   browsable contributors
+License:  MIT
+Version:  0.1.0
+
+==============================================================================
+CONTENTS                                                    *browsable-contents*
+
+    1. Introduction ................ |browsable-introduction|
+    2. Requirements ................ |browsable-requirements|
+    3. Setup ....................... |browsable-setup|
+    4. Configuration ............... |browsable-configuration|
+    5. Commands .................... |browsable-commands|
+
+==============================================================================
+1. INTRODUCTION                                         *browsable-introduction*
+
+browsable.nvim wires the `browsable-lsp` language server into Neovim and
+exposes user commands that shell out to the `browsable` CLI for one-shot
+audit, diagnostic, and target-resolution operations.
+
+The plugin performs NO analysis of its own — all browser-compatibility logic
+lives in the `browsable` gem / `browsable-lsp` server. The plugin is
+responsible only for:
+
+  • Starting and attaching `browsable-lsp` on supported filetypes.
+  • Running `browsable audit` and surfacing results in the quickfix list.
+  • Running `browsable doctor` in a floating terminal.
+  • Running `browsable target` and notifying the resolved browser target.
+
+==============================================================================
+2. REQUIREMENTS                                         *browsable-requirements*
+
+  • Neovim 0.10 or newer.
+  • `browsable-lsp` installed and available on PATH: >
+        gem install browsable-lsp
+<
+  • `browsable` CLI installed and available on PATH (required for audit,
+    doctor, and target commands): >
+        gem install browsable
+<
+  • A project with at least one root marker recognised by the plugin:
+    `Gemfile`, `.browsable.yml`, or `config/browsable.yml`.
+
+==============================================================================
+3. SETUP                                                       *browsable-setup*
+
+Call `setup()` somewhere in your Neovim configuration (e.g. `init.lua`): >
+
+    require("browsable").setup()
+<
+Or with options: >
+
+    require("browsable").setup({
+      auto_start   = true,
+      filetypes    = { "css", "scss", "html", "eruby", "javascript" },
+      cmd          = { "browsable-lsp" },
+      cli          = { "browsable" },
+      root_markers = { "Gemfile", ".browsable.yml", "config/browsable.yml" },
+    })
+<
+`setup()` merges your options over the defaults and, when `auto_start` is
+true, registers a `FileType` autocmd that attaches `browsable-lsp` whenever
+you open a file whose filetype is in `filetypes`.
+
+==============================================================================
+4. CONFIGURATION                                       *browsable-configuration*
+
+All options are optional; values shown are the defaults.
+
+                                                           *browsable.filetypes*
+`filetypes` ~
+    List of Neovim filetypes on which `browsable-lsp` is auto-attached.
+    Default: `{ "css", "scss", "html", "eruby", "javascript" }`
+
+                                                                *browsable.cmd*
+`cmd` ~
+    Command (as a list) used to launch the LSP server over stdio.
+    Default: `{ "browsable-lsp" }`
+    Change this if the executable lives at a non-standard path, e.g.:
+    `cmd = { "/usr/local/bin/browsable-lsp" }`
+
+                                                                *browsable.cli*
+`cli` ~
+    Command (as a list) used for one-shot CLI operations (audit, doctor,
+    target). Default: `{ "browsable" }`
+
+                                                         *browsable.auto_start*
+`auto_start` ~
+    When `true` (the default), `setup()` registers the `FileType` autocmd
+    that auto-attaches the LSP. Set to `false` if you want to manage
+    attachment manually via `require("browsable.lsp").start(config, bufnr)`.
+
+                                                       *browsable.root_markers*
+`root_markers` ~
+    Files or directories used to locate the project root. The plugin walks
+    upward from the current buffer's directory until it finds one of these.
+    Default: `{ "Gemfile", ".browsable.yml", "config/browsable.yml" }`
+
+==============================================================================
+5. COMMANDS                                                 *browsable-commands*
+
+                                                                   *:Browsable*
+`:Browsable` ~
+    Run `browsable audit --format json` over the project root, convert the
+    findings into quickfix entries, populate the quickfix list, open the
+    quickfix window (`:copen`), and display a summary notification.
+
+    Severity mapping:
+      • `error`   → quickfix type `E`
+      • `warning` → quickfix type `W`
+      • `info`    → quickfix type `I`
+
+                                                             *:BrowsableDoctor*
+`:BrowsableDoctor` ~
+    Open a centred floating terminal window (~80 % of editor size) running
+    `browsable doctor`. Useful for checking that all system dependencies
+    (gems, executables, config files) are in order. Press `q` to close.
+
+                                                             *:BrowsableTarget*
+`:BrowsableTarget` ~
+    Run `browsable target --json`, parse the result, and display a
+    notification showing the resolved browser-support query and the concrete
+    browser versions it expands to. Example output: >
+
+        Target query: modern
+          chrome 120
+          safari 17.2
+<
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:

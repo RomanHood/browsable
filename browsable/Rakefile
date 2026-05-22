@@ -1,0 +1,13 @@
+# frozen_string_literal: true
+
+# `bundler/gem_tasks` provides `rake build`, `rake install`, and `rake release`
+# (the standard publish-to-rubygems flow used by the release workflow).
+require "bundler/gem_tasks"
+
+begin
+  require "rspec/core/rake_task"
+  RSpec::Core::RakeTask.new(:spec)
+  task default: :spec
+rescue LoadError
+  # rspec is a development dependency; absent in production installs.
+end

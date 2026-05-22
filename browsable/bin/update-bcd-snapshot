@@ -1,0 +1,65 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Maintenance script — refresh data/bcd-snapshot.json from the latest published
+# @mdn/browser-compat-data. The gem ships the generated snapshot; this script
+# is run by maintainers, never at gem runtime.
+#
+#   ruby bin/update-bcd-snapshot
+#
+# It downloads the full dataset (several MB) and keeps only the subtrees
+# browsable's ERB/HTML analyzer actually consults, so the committed file stays
+# small.
+
+require "net/http"
+require "uri"
+require "json"
+require "time"
+
+SOURCE = "https://cdn.jsdelivr.net/npm/@mdn/browser-compat-data/data.json"
+OUTPUT = File.expand_path("../data/bcd-snapshot.json", __dir__)
+
+# Only these subtrees are retained.
+SUBTREES = [
+  %w[html elements],
+  %w[html global_attributes],
+  %w[css properties]
+].freeze
+
+def fetch(url, redirects: 5)
+  raise "Too many redirects" if redirects.negative?
+
+  response = Net::HTTP.get_response(URI.parse(url))
+  case response
+  when Net::HTTPSuccess     then response.body
+  when Net::HTTPRedirection then fetch(response["location"], redirects: redirects - 1)
+  else raise "HTTP #{response.code} fetching #{url}"
+  end
+end
+
+puts "Fetching #{SOURCE} ..."
+full = JSON.parse(fetch(SOURCE))
+
+snapshot = {
+  "__meta" => {
+    "source" => SOURCE,
+    "generated_at" => Time.now.utc.iso8601,
+    "subtrees" => SUBTREES.map { |path| path.join(".") }
+  }
+}
+
+SUBTREES.each do |path|
+  node = full.dig(*path)
+  unless node
+    warn "  ! subtree #{path.join('.')} not found — skipping"
+    next
+  end
+
+  # Rebuild the nested structure: ["html", "elements"] => { "html" => { "elements" => node } }
+  nested = path[1..].reverse.reduce(node) { |acc, key| { key => acc } }
+  snapshot[path.first] = (snapshot[path.first] || {}).merge(nested)
+  puts "  + kept #{path.join('.')} (#{node.size} entries)"
+end
+
+File.write(OUTPUT, "#{JSON.pretty_generate(snapshot)}\n")
+puts "Wrote #{OUTPUT} (#{File.size(OUTPUT)} bytes)"

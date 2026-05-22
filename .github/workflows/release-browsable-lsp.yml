@@ -1,0 +1,31 @@
+name: Release browsable-lsp
+
+# Publishes the `browsable-lsp` gem to RubyGems when a tag like
+# `browsable-lsp-v0.1.0` is pushed.
+on:
+  push:
+    tags:
+      - "browsable-lsp-v*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+          working-directory: browsable-lsp
+
+      # `rake build` + `gem push` rather than `rake release`: the tag already
+      # exists (it triggered this run), so re-tagging would fail.
+      - name: Build and publish to RubyGems
+        working-directory: browsable-lsp
+        env:
+          GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
+        run: |
+          bundle exec rake build
+          gem push pkg/*.gem

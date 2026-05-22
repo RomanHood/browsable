@@ -1,0 +1,44 @@
+# frozen_string_literal: true
+
+RSpec.describe Browsable::Config do
+  it "runs zero-config, supplying defaults when no file is present" do
+    config = described_class.load(root: Dir.mktmpdir)
+
+    expect(config.file_present?).to be(false)
+    expect(config.severity["below_target"]).to eq("error")
+    expect(config.importmap_enabled?).to be(true)
+  end
+
+  it "infers the target from ApplicationController's allow_browser policy" do
+    Dir.mktmpdir do |root|
+      controller = File.join(root, "app/controllers/application_controller.rb")
+      FileUtils.mkdir_p(File.dirname(controller))
+      File.write(controller, <<~RUBY)
+        class ApplicationController < ActionController::Base
+          allow_browser versions: :modern
+        end
+      RUBY
+
+      config = described_class.load(root: root)
+      expect(config.detected_policy).to eq(:modern)
+      expect(config.target.minimum_version("safari")).to eq("17.2")
+    end
+  end
+
+  it "merges a config file over the defaults" do
+    Dir.mktmpdir do |root|
+      File.write(File.join(root, ".browsable.yml"), "severity:\n  below_target: warning\n")
+
+      config = described_class.load(root: root)
+      expect(config.severity["below_target"]).to eq("warning") # overridden
+      expect(config.severity["baseline_limited"]).to eq("error") # default preserved
+    end
+  end
+
+  it "raises a ConfigError on malformed YAML" do
+    Dir.mktmpdir do |root|
+      File.write(File.join(root, ".browsable.yml"), "severity: [unterminated\n")
+      expect { described_class.load(root: root) }.to raise_error(Browsable::ConfigError)
+    end
+  end
+end

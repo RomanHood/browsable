@@ -1,0 +1,51 @@
+# config/browsable.yml
+#
+# Configuration for the `browsable` gem. Every option below is optional —
+# delete this file entirely and `browsable` will use sensible defaults.
+# Uncomment any line to override.
+<% if manual_query -%>
+
+# A manual target was requested when this file was generated:
+target:
+  source: manual
+  manual_query: "<%= manual_query %>"
+<% end -%>
+<% unless minimal -%>
+
+# target:
+#   # How browsable decides which browsers your app must support.
+#   # Options: allow_browsers | browserslist | manual
+#   # Default: allow_browsers (reads ApplicationController's allow_browser policy)
+#   #
+#   <%= detected_comment %>
+#   source: allow_browsers
+#
+#   # Only used when source: manual
+#   manual_query: "defaults"
+
+# sources:
+#   # Globs are relative to the project root. The values shown are the defaults.
+#   stylesheets: ["app/assets/stylesheets/**/*.{css,scss}"]
+#   builds:      ["app/assets/builds/**/*.css"]
+#   views:       ["app/views/**/*.{html.erb,turbo_stream.erb}", "app/components/**/*.{rb,html.erb}"]
+#   javascript:  ["app/javascript/**/*.{js,mjs}"]
+#   importmap:   true   # resolve config/importmap.rb pins and audit pinned JS
+#   public:      ["public/**/*.{html,css,js}"]
+#   custom:      []     # extra globs to fold into the audit
+
+# severity:
+#   # Map each finding category to error | warning | info.
+#   baseline_newly_available: warning   # Baseline feature, only recently so
+#   baseline_limited:         error     # limited availability (not Baseline)
+#   below_target:             error     # unsupported by a browser you target
+
+# ignore:
+#   features: []   # e.g. ["css.properties.has", "html.global_attributes.popover"]
+#   files:    []   # globs of files to skip entirely
+<% else -%>
+
+# target:
+# sources:
+# severity:
+# ignore:
+<% end -%>
