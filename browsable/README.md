@@ -151,6 +151,16 @@ ApplicationController.allow_browser  →  Target (browserslist query)  →  Anal
 stylelint/eslint with that target, and runs Herb against the bundled MDN
 browser-compat-data snapshot for ERB/HTML.
 
+### Partial `allow_browser` policies
+
+If your `allow_browser` policy is a hash that pins only some browsers — say
+`versions: { safari: 16.4, firefox: 121 }` — Rails leaves every browser you
+*don't* list allowed at **any** version (it only blocks a browser it was given a
+minimum, or `false`, for). browsable audits exactly the browsers you pinned and
+prints a note naming the rest. To audit against more, set an explicit `target:`
+in `config/browsable.yml`. The same note-and-fall-back-to-`defaults` behaviour
+applies when browsable cannot resolve your policy statically.
+
 ## Rake tasks
 
 Inside a Rails app, the railtie registers:

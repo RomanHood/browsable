@@ -120,6 +120,29 @@ module Browsable
       end
     end
 
+    # Major browsers an explicit allow_browser *hash* neither pins to a version
+    # nor blocks. Rails allows these at any version — it only ever blocks a
+    # browser it was given a minimum (or `false`) for — so browsable has no
+    # floor to audit them against. Empty unless the policy is an explicit hash.
+    def unconstrained_browsers
+      return [] unless detected_policy.is_a?(Hash)
+
+      Target::MODERN.keys - detected_policy.keys
+    end
+
+    # Informational caveats about the resolved target. The key one explains how
+    # Rails treats browsers absent from an explicit allow_browser hash, so the
+    # user is never left guessing what happens to the browsers they omitted.
+    def target_notes
+      return [] if unconstrained_browsers.empty?
+
+      pinned = detected_policy.keys.join(", ")
+      omitted = unconstrained_browsers.join(", ")
+      ["Your allow_browser policy pins a version only for #{pinned}. Rails leaves every " \
+       "browser you don't list (#{omitted}) allowed at any version, so browsable audits " \
+       "only #{pinned}. Add a `target:` block to config/browsable.yml to audit the others."]
+    end
+
     # True when an explicit config file was found and loaded.
     def file_present? = !config_file.nil?
   end

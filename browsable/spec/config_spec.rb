@@ -47,6 +47,34 @@ RSpec.describe Browsable::Config do
     end
   end
 
+  it "explains that browsers omitted from an allow_browser hash are unconstrained" do
+    Dir.mktmpdir do |root|
+      controller = File.join(root, "app/controllers/application_controller.rb")
+      FileUtils.mkdir_p(File.dirname(controller))
+      File.write(controller, <<~RUBY)
+        class ApplicationController < ActionController::Base
+          allow_browser versions: { safari: 16.4, firefox: 121 }
+        end
+      RUBY
+
+      config = described_class.load(root: root)
+      expect(config.unconstrained_browsers).to contain_exactly("chrome", "edge", "opera")
+      expect(config.target_notes.join).to match(/allowed at any version/)
+    end
+  end
+
+  it "adds no unconstrained-browser note for a :modern policy" do
+    Dir.mktmpdir do |root|
+      controller = File.join(root, "app/controllers/application_controller.rb")
+      FileUtils.mkdir_p(File.dirname(controller))
+      File.write(controller, "class ApplicationController\n  allow_browser versions: :modern\nend\n")
+
+      config = described_class.load(root: root)
+      expect(config.unconstrained_browsers).to be_empty
+      expect(config.target_notes).to be_empty
+    end
+  end
+
   it "records a note (and falls back to defaults) when the policy is unresolvable" do
     Dir.mktmpdir do |root|
       controller = File.join(root, "app/controllers/application_controller.rb")

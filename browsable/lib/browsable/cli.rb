@@ -115,12 +115,24 @@ module Browsable
       config = load_config(File.expand_path(path))
       resolved = resolve_target(config)
 
+      unconstrained = options[:target] ? [] : config.unconstrained_browsers
+      caveats = []
+      unless options[:target]
+        caveats << config.policy_note if config.policy_note
+        caveats.concat(config.target_notes)
+      end
+
       if json_output?
-        puts JSON.pretty_generate(resolved.as_json.merge(note: config.policy_note))
+        puts JSON.pretty_generate(
+          resolved.as_json.merge(unconstrained_browsers: unconstrained, notes: caveats)
+        )
       else
         puts pastel.bold("Target: #{resolved.query}")
-        resolved.browsers.each { |browser, version| puts "  #{browser} >= #{version}" }
-        puts pastel.yellow("! #{config.policy_note}") if config.policy_note
+        resolved.browsers.each { |browser, version| puts "  #{browser.ljust(9)}>= #{version}" }
+        unconstrained.each do |browser|
+          puts pastel.dim("  #{browser.ljust(9)}any version  (not listed in allow_browser)")
+        end
+        caveats.each { |note| puts pastel.yellow("! #{note}") }
       end
     end
 
@@ -158,9 +170,13 @@ module Browsable
       end
 
       notes = []
-      # Surface a target that could not be inferred — unless the user has
-      # already overridden it on the command line.
-      notes << config.policy_note if config.policy_note && !options[:target]
+      # Surface target caveats — a policy that could not be inferred, or the
+      # Rails rule that browsers absent from an allow_browser hash are
+      # unconstrained — unless the user overrode the target on the command line.
+      unless options[:target]
+        notes << config.policy_note if config.policy_note
+        notes.concat(config.target_notes)
+      end
 
       Report.new(findings: findings, skips: skips, notes: notes, target: target,
                  root: root, config_file: config.config_file)
