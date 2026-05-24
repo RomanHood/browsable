@@ -31,6 +31,7 @@ The name is a play on Rails 8's `allow_browser` controller API. Instead of *decl
 - [CLI reference](#cli-reference)
 - [Configuration](#configuration)
 - [How it works](#how-it-works)
+- [Runtime auditing (test-suite mode)](#runtime-auditing-test-suite-mode)
 - [Per-controller policies](#per-controller-and-per-action-policies)
 - [Suggested policy fixes](#suggested-allow_browser-fix)
 - [Rake tasks](#rake-tasks)
@@ -143,6 +144,7 @@ This installs missing tools via `brew` or `npm` — opt-in, never automatic.
 | `browsable doctor` | Check system dependencies |
 | `browsable doctor --fix` | Install missing dependencies |
 | `browsable target [PATH]` | Show the inferred browser-support target |
+| `browsable replay PATH` | Reformat a JSON audit dump *(test-suite mode → GitHub annotations)* |
 | `browsable init` | Generate `.browsable.yml` *(non-Rails projects)* |
 | `browsable version` | Print the version |
 
@@ -254,16 +256,124 @@ It's a suggestion, not an instruction. Tightening the policy is one fix; changin
 
 The suggestion is derived from HTML/ERB findings, which carry exact version data. It also appears in `--json` output as `suggested_policy` and as a GitHub Actions notice.
 
+## Runtime auditing (test-suite mode)
+
+Static mode answers the question *“does my codebase satisfy a single browser-support target?”*. Runtime mode answers a sharper one: *“for every endpoint in my app, does the HTML it actually renders satisfy that endpoint's policy?”* It does this without trying to build a static asset → endpoint graph — instead, it lets Rails itself say what each endpoint renders during a test run, and audits *that*.
+
+Runtime mode uses **the same machine-level tools as static mode** — `node`, `stylelint`, `eslint`. No `package.json`, no `node_modules` in your Rails app. The middleware records during the suite; analysis happens **once**, at the end, with one stylelint and one eslint invocation regardless of how many request specs you ran.
+
+### Adoption
+
+```ruby
+# Gemfile
+group :development, :test do
+  gem "browsable"
+end
+```
+
+```bash
+bundle install
+bundle exec browsable doctor       # one-time, installs stylelint / eslint if missing
+```
+
+```ruby
+# spec/rails_helper.rb (RSpec)
+require "browsable/rspec"
+
+# OR test/test_helper.rb (Minitest)
+require "browsable/minitest"
+```
+
+Then run your suite as you normally would:
+
+```bash
+bundle exec rspec        # or: bundle exec rails test
+```
+
+At end-of-suite Browsable prints a report grouped by `Controller#action`, with each finding evaluated against that endpoint's effective `allow_browser` policy.
+
+### How it works
+
+```
+   ┌──────────────────────┐
+   │   Rack middleware    │   per request: parse HTML, resolve asset URLs,
+   │   (records only)     │   look up policy, push to AuditLog. NO subprocesses.
+   └──────────┬───────────┘
+              │
+              ▼
+   ┌──────────────────────┐
+   │     AuditLog         │   thread-safe accumulator of
+   │     (in-memory)      │   (endpoint, policy, html, asset_paths)
+   └──────────┬───────────┘
+              │  end of suite
+              ▼
+   ┌──────────────────────┐
+   │     TestReport       │   deduplicated asset universe ➜
+   │  (one stylelint,     │     stylelint × 1, eslint × 1
+   │   one eslint call)   │     findings ➜ attributed back to endpoints
+   └──────────────────────┘
+```
+
+- **The middleware never analyzes.** Per-request work is a Nokogiri parse plus URL resolution — under a few milliseconds on a typical page.
+- **The middleware never runs in production.** It raises at construction if `Rails.env.production?`.
+- **Analysis is one batch.** A 500-spec suite that hits 50 unique HTML pages loading the same 10 CSS files spawns **two Node processes**, total — not 500.
+- **Endpoint-level policies.** The `PolicyResolver` walks each controller's ancestor chain, applies each `allow_browser` call's `only:`/`except:` filter, and picks the last matching one — matching Rails' own filter-callback semantics.
+
+### Configuration
+
+The drivers ship with sensible defaults. Override per-suite:
+
+```ruby
+Browsable::RSpec.configure do |c|
+  c.fail_on = :error         # :error | :warning | :never
+  c.format  = :human         # :human | :json | :github
+  c.output  = "tmp/browsable_report.json"
+end
+```
+
+For CI: dump the report as JSON during the test run, then re-render it as GitHub annotations:
+
+```bash
+bundle exec rspec
+bundle exec browsable replay tmp/browsable_report.json --format github
+```
+
+### Example output
+
+```
+browsable audit
+target: runtime-union  (chrome 100, firefox 121, safari 17.2)
+
+[response] PostsController#show
+  ✗ 14:22  popover  the 'popover' attribute needs Safari 17+, but PostsController#show
+                    policy allows Safari 15
+
+app/assets/builds/application.css
+  ▲ 42:3   css-has  ":has()" is not a known feature
+
+Browser policies (2 found)
+  ApplicationController             :modern
+  LegacyController                  { safari: 15, chrome: 100 }  (only: embed)
+
+1 error, 1 warning  across 2 file(s)
+```
+
+`[response] Controller#action` lines are findings against an endpoint's rendered HTML; ordinary file paths are findings against assets the endpoint loaded — the JSON output (`browsable replay … --format json`) preserves the full endpoint-to-finding mapping so dashboards can reconstruct it.
+
+### Compatibility
+
+- Rails 7.1+ (middleware reads `env["action_controller.instance"]`)
+- Ruby 3.2+
+- Propshaft (preferred), with a Sprockets + filesystem fallback
+- RSpec 3.10+ or Minitest 5.15+
+
 ## Per-controller and per-action policies
 
 Rails lets any controller override `allow_browser` and scope the override to certain actions with `only:` / `except:`. Browsable scans every file under `app/controllers/` (including `concerns/`) and lists each `allow_browser` call it finds — with its versions and any action scope — under **Browser policies** in the report.
 
-The audit itself runs against a **single target** (`ApplicationController`'s policy, or your `config/browsable.yml`). Browsable does **not** try to map each frontend asset to the exact endpoints that serve it.
+In **static mode**, the audit runs against a single target. CSS and importmap JavaScript are global assets, included via layout helpers on nearly every page, so they have no single owning controller action — and a static asset → endpoint graph would be guesswork.
 
-Why? CSS and importmap JavaScript are *global* assets, included via layout helpers on nearly every page. They have no single owning controller action — and a per-asset policy graph would be guesswork. Instead, Browsable shows you the whole policy landscape:
-
-- If a controller serves shared assets to a broader range of browsers than `ApplicationController`, audit against that policy explicitly with `--target` or `config/browsable.yml`.
-- Per-action auditing of `app/views/<controller>/` templates against their controller's policy is a planned refinement (see [v0.2 roadmap][roadmap]).
+In **runtime mode** (v0.2+), this is solved properly: the middleware sees the actual HTML each endpoint renders during a test run, so findings are attached to the endpoints that *actually loaded* the asset, against each endpoint's *specific* policy. See [Runtime auditing](#runtime-auditing-test-suite-mode) above.
 
 ## Rake tasks
 

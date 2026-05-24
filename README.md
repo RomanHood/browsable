@@ -66,6 +66,33 @@ Inside a Rails app, add it to the `Gemfile` instead and run
 infers everything. A `config/browsable.yml` is only for overriding defaults
 (`rails g browsable:install` generates a commented one).
 
+## Two operating modes
+
+browsable runs in either of two modes — pick the one that matches the question
+you actually have:
+
+- **Static mode** *(the default; available since v0.1)* — `browsable audit`
+  walks the source tree (`app/assets/**`, `app/views/**`, `app/javascript/**`,
+  `config/importmap.rb`), routes each file to the right analyzer, and reports
+  every feature whose required browser support falls outside the project's one
+  declared target (`ApplicationController`'s `allow_browser` policy). Best for
+  a project-wide go/no-go, CI gates, and editor diagnostics.
+- **Runtime mode** *(opt-in; new in v0.2)* — a Rack middleware records every
+  HTML response your test suite produces, identifies the controller#action
+  that rendered it, looks up that endpoint's effective `allow_browser` policy,
+  and notes which assets the response loaded. At end-of-suite, stylelint and
+  eslint are invoked **once each** over the deduplicated union of every asset
+  the suite touched, and findings are attributed back to the endpoints that
+  actually loaded them. Best for per-endpoint, per-policy accuracy in apps
+  with multiple `allow_browser` declarations.
+
+Runtime mode uses the **same machine-level tools** (`node`, `stylelint`,
+`eslint`) as static mode, installed the **same way** (`browsable doctor`), with
+**no `package.json` and no `node_modules`** in your Rails app. To turn it on,
+add `require "browsable/rspec"` (or `require "browsable/minitest"`) to your
+test helper — that is the entire opt-in. See the gem's
+[README](browsable/README.md#runtime-auditing-test-suite-mode) for details.
+
 Want to see it work first? The repo ships a fixture:
 
 ```bash

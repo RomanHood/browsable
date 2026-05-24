@@ -1,0 +1,91 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Measures Browsable::AssetResolver's success rate against a corpus of fixture
+# HTML files. The runtime-mode v0.2 success bar is ≥95% — this script is the
+# pre-merge guard against regressions in the resolver's heuristics.
+#
+# Usage:
+#   bin/benchmark-asset-resolution [CORPUS_DIR]
+#
+# CORPUS_DIR defaults to ./benchmark/corpus. Each subdirectory of the corpus
+# is treated as a synthetic Rails app: it should contain an `app/` (or
+# `public/`) tree mirroring an app's layout, plus a `pages/` directory of
+# representative rendered HTML responses.
+
+require_relative "../lib/browsable"
+
+DEFAULT_CORPUS = File.expand_path("../benchmark/corpus", __dir__)
+
+corpus = ARGV[0] || DEFAULT_CORPUS
+
+unless File.directory?(corpus)
+  warn "No corpus at #{corpus}. Create one under benchmark/corpus/<app-name>."
+  warn "Each subdirectory should look like a Rails app with a pages/ folder of HTML samples."
+  exit 1
+end
+
+results = { total: 0, resolved: 0, by_strategy: Hash.new(0), unresolved: [] }
+
+Dir.children(corpus).sort.each do |app_dir|
+  app_root = File.join(corpus, app_dir)
+  next unless File.directory?(app_root)
+
+  resolver = Browsable::AssetResolver.new(root: app_root)
+  pages = Dir.glob(File.join(app_root, "pages", "**/*.html"))
+
+  pages.each do |page|
+    html = File.read(page)
+    extraction = Browsable::HtmlExtractor.extract(html)
+
+    extraction.asset_paths.each do |ref|
+      results[:total] += 1
+      detailed = resolver.detailed_resolve(ref.url)
+      if detailed.resolved?
+        results[:resolved] += 1
+        results[:by_strategy][detailed.strategy] += 1
+      else
+        results[:by_strategy][detailed.strategy] += 1
+        results[:unresolved] << { app: app_dir, page: File.basename(page), url: ref.url }
+      end
+    end
+  end
+end
+
+if results[:total].zero?
+  warn "No asset references found in any page of #{corpus}."
+  exit 1
+end
+
+ratio = results[:resolved].fdiv(results[:total])
+percent = (ratio * 100).round(2)
+
+puts "Browsable asset resolver — benchmark"
+puts "------------------------------------"
+puts "Corpus:          #{corpus}"
+puts "Total refs:      #{results[:total]}"
+puts "Resolved:        #{results[:resolved]} (#{percent}%)"
+puts ""
+puts "By strategy:"
+results[:by_strategy].sort_by { |k, _| k.to_s }.each do |strategy, count|
+  puts "  #{strategy.to_s.ljust(12)} #{count}"
+end
+
+unless results[:unresolved].empty?
+  puts ""
+  puts "Unresolved (first 20):"
+  results[:unresolved].first(20).each do |miss|
+    puts "  #{miss[:app]} / #{miss[:page]}: #{miss[:url]}"
+  end
+end
+
+# Exit non-zero if below the v0.2 success bar so CI can gate the merge.
+threshold = (ENV["BROWSABLE_RESOLVER_THRESHOLD"] || "95").to_f
+if percent < threshold
+  warn ""
+  warn "BELOW THRESHOLD (#{percent}% < #{threshold}%) — fix the resolver before merging v0.2."
+  exit 1
+end
+
+puts ""
+puts "Meets the #{threshold}% bar."

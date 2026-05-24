@@ -30,15 +30,19 @@ end
 
 Browsable.loader = Zeitwerk::Loader.for_gem
 Browsable.loader.inflector.inflect(
-  "cli"  => "CLI",
-  "css"  => "CSS",
-  "erb"  => "ERB",
-  "html" => "HTML"
+  "cli"   => "CLI",
+  "css"   => "CSS",
+  "erb"   => "ERB",
+  "html"  => "HTML",
+  "rspec" => "RSpec"
 )
 # These files intentionally do not define a constant matching their path.
 Browsable.loader.ignore("#{__dir__}/browsable/version.rb")
 Browsable.loader.ignore("#{__dir__}/browsable/rake_tasks.rb")
 Browsable.loader.ignore("#{__dir__}/browsable/railtie.rb")
+# Driver entry points: they require the gem and call into Drivers::X.install!.
+Browsable.loader.ignore("#{__dir__}/browsable/rspec.rb")
+Browsable.loader.ignore("#{__dir__}/browsable/minitest.rb")
 # Rails generators are discovered and loaded by Rails itself, not Zeitwerk.
 Browsable.loader.ignore("#{__dir__}/generators")
 Browsable.loader.setup

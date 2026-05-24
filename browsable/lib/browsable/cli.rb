@@ -137,6 +137,30 @@ module Browsable
       end
     end
 
+    desc "replay PATH", "Reformat a JSON audit dump from a previous test-suite run"
+    long_desc <<~DESC
+      Reads the JSON produced by `Browsable::TestReport#to_json` (runtime mode)
+      or `--json` (static mode) and re-renders it through any formatter. Handy
+      for emitting GitHub annotations in CI from a saved test-suite dump.
+    DESC
+    option :"fail-on", type: :string, enum: %w[warning error never], default: "error"
+    def replay(path)
+      abort_with("Cannot read #{path}: not a file") unless File.file?(path)
+
+      replay = Replay.from_file(path)
+      formatter = case (options[:format] || (options[:json] ? "json" : "human"))
+                  when "json"   then Formatters::Json
+                  when "github" then Formatters::Github
+                  else               Formatters::Human
+                  end
+      puts formatter.new(replay).render
+
+      fail_on = options["fail-on"] || "error"
+      exit(fail_on == "never" ? 0 : replay.exit_code(fail_on: fail_on))
+    rescue JSON::ParserError => e
+      abort_with("#{path} is not valid JSON: #{e.message}")
+    end
+
     desc "version", "Print the browsable version"
     def version
       puts "browsable #{Browsable::VERSION}"
