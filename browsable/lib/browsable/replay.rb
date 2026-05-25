@@ -69,6 +69,7 @@ module Browsable
     def policies   = []
     def root       = data.dig("target", "root") || Dir.pwd
     def config_file = nil
+    def pipeline   = data["pipeline"]
 
     def target
       tdata = data["target"]

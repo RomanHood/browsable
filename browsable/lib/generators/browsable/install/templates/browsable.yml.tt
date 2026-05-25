@@ -25,10 +25,12 @@ target:
 
 # sources:
 #   # Globs are relative to the project root. The values shown are the defaults.
-#   stylesheets: ["app/assets/stylesheets/**/*.{css,scss}"]
+#   stylesheets: ["app/assets/stylesheets/**/*.{css,scss,sass}"]
 #   builds:      ["app/assets/builds/**/*.css"]
 #   views:       ["app/views/**/*.{html.erb,turbo_stream.erb}", "app/components/**/*.{rb,html.erb}"]
-#   javascript:  ["app/javascript/**/*.{js,mjs}"]
+#   # Both Propshaft/importmap (app/javascript) and Sprockets
+#   # (app/assets/javascripts) layouts are discovered by default.
+#   javascript:  ["app/javascript/**/*.{js,mjs}", "app/assets/javascripts/**/*.{js,mjs}"]
 #   importmap:   true   # resolve config/importmap.rb pins and audit pinned JS
 #   public:      ["public/**/*.{html,css,js}"]
 #   custom:      []     # extra globs to fold into the audit

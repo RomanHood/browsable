@@ -30,4 +30,19 @@ RSpec.describe Browsable::Formatters::Json do
     expect(json["findings"]).to eq([])
     expect(json["summary"]["errors"]).to eq(0)
   end
+
+  it "includes the detected asset pipeline as a top-level field" do
+    report = Browsable::Report.new(target: Browsable::Target.modern, pipeline: "sprockets")
+    json = JSON.parse(described_class.new(report).render)
+
+    expect(json["pipeline"]).to eq("sprockets")
+  end
+
+  it "emits a null pipeline when none was detected" do
+    report = Browsable::Report.new(target: Browsable::Target.modern)
+    json = JSON.parse(described_class.new(report).render)
+
+    expect(json.key?("pipeline")).to be(true)
+    expect(json["pipeline"]).to be_nil
+  end
 end

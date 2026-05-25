@@ -33,6 +33,7 @@ module Browsable
           lines << pastel.dim("target: #{target.query}  (#{browsers})")
         end
         lines << pastel.dim("config: #{report.config_file || 'none (no config file)'}")
+        lines << pastel.dim("pipeline: #{report.pipeline}") if report.pipeline
         lines.join("\n") + "\n"
       end
 

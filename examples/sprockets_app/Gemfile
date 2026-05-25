@@ -1,0 +1,13 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+# A minimal Sprockets-based Rails app — the classic asset-pipeline layout that
+# predates Propshaft. Used as a fixture for `browsable audit` to exercise the
+# Sprockets discovery path (app/assets/javascripts, SCSS sources, //= require
+# directives).
+gem "rails", "~> 7.1"
+gem "sprockets-rails"
+
+# Audit this app with the local checkout of browsable from this monorepo.
+gem "browsable", path: "../../browsable"

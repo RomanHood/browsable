@@ -5,6 +5,26 @@ All notable changes to the `browsable` gem are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added — Sprockets asset-pipeline support (flag for 0.2.1)
+
+- **Pipeline detection (`Browsable::AssetPipeline`).** Identifies whether the
+  project uses Propshaft, Sprockets, both, or neither. Surfaces the name in the
+  audit header (`pipeline: sprockets`) and as a top-level field in `--json`
+  output (`"pipeline": "sprockets"`). Live `defined?` checks win when available;
+  otherwise the `Gemfile.lock` is the fallback.
+- **Sprockets-layout JS discovery.** Default JS globs now include
+  `app/assets/javascripts/**/*.{js,mjs}` alongside the Propshaft/importmap
+  `app/javascript/**`. Sprockets directives (`//= require`, `*= require_tree`)
+  live inside comments and are passed through untouched — no preprocessing.
+- **SCSS routing.** `.scss` and `.sass` are discovered and routed to stylelint
+  with `--customSyntax postcss-scss` when any are present.
+- **`postcss-scss` in `doctor`.** Listed as an optional dependency, only flagged
+  as missing when the project actually has SCSS files on disk.
+- **`examples/sprockets_app`.** New fixture mirroring `examples/rails_app` with
+  the Sprockets layout.
+
 ## [0.2.0] - 2026-05-25
 
 ### Added — Runtime response auditing

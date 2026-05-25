@@ -20,11 +20,16 @@ module Browsable
         "manual_query" => "defaults"
       },
       "sources" => {
-        "stylesheets" => ["app/assets/stylesheets/**/*.{css,scss}"],
+        "stylesheets" => ["app/assets/stylesheets/**/*.{css,scss,sass}"],
         "builds"      => ["app/assets/builds/**/*.css"],
         "views"       => ["app/views/**/*.{html.erb,turbo_stream.erb}",
                           "app/components/**/*.{rb,html.erb}"],
-        "javascript"  => ["app/javascript/**/*.{js,mjs}"],
+        # `app/javascript` is the Propshaft/importmap convention;
+        # `app/assets/javascripts` is the Sprockets convention. Globbing both
+        # is harmless on a Propshaft-only app (no files match) and lets the
+        # CLI work on Sprockets apps with zero configuration.
+        "javascript"  => ["app/javascript/**/*.{js,mjs}",
+                          "app/assets/javascripts/**/*.{js,mjs}"],
         "importmap"   => true,
         "public"      => ["public/**/*.{html,css,js}"],
         "custom"      => []

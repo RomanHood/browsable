@@ -42,11 +42,24 @@ module Browsable
       Tool.new(key: :eslint_plugin_compat, label: "eslint-plugin-compat", binary: nil,
                npm_package: "eslint-plugin-compat",
                purpose: "the eslint plugin that performs the JS compat checks",
-               enables: %i[js], required: true)
+               enables: %i[js], required: true),
+      Tool.new(key: :postcss_scss, label: "postcss-scss", binary: nil,
+               npm_package: "postcss-scss",
+               purpose: "lets stylelint parse SCSS sources (Sprockets apps)",
+               enables: %i[scss], required: false)
     ].freeze
 
     # Analyzer kinds that need no external tooling at all.
     ALWAYS_AVAILABLE = %i[erb html].freeze
+
+    # @param root [String, nil] the project root. When provided, optional tools
+    #   (e.g. postcss-scss) are only flagged as missing if the project actually
+    #   has files that need them.
+    def initialize(root: nil)
+      @root = root && File.expand_path(root)
+    end
+
+    attr_reader :root
 
     def statuses
       @statuses ||= TOOLS.map do |tool|
@@ -62,6 +75,33 @@ module Browsable
 
     def missing
       statuses.reject(&:installed?).map(&:tool)
+    end
+
+    def postcss_scss_installed?
+      tool = TOOLS.find { |t| t.key == :postcss_scss }
+      installed?(tool)
+    end
+
+    # Whether the project at `root` actually has files that need this tool.
+    # For unconditional tools (e.g. node, stylelint) this is always true; for
+    # optional tools (e.g. postcss-scss) it depends on what's on disk.
+    def needs_tool?(tool)
+      return true if tool.required
+      return true if tool.enables.empty? # tools that enable nothing are housekeeping
+      return true unless root            # no project context: assume needed
+
+      tool.enables.all? { |kind| project_has_kind?(kind) }
+    end
+
+    # Optional tools that *would* be needed by this project but aren't installed.
+    # Used by the audit CLI to surface targeted skips (e.g. postcss-scss missing
+    # only when the project has SCSS files).
+    def needed_optional_missing
+      missing.select do |tool|
+        next false if tool.required
+
+        needs_tool?(tool)
+      end
     end
 
     # Which analyzer kinds can actually run on this machine right now.
@@ -84,8 +124,9 @@ module Browsable
       lines = [pastel.bold("browsable doctor — system dependencies"), ""]
 
       statuses.each do |status|
-        mark = status.installed? ? pastel.green("✓") : pastel.red("✗")
-        lines << "  #{mark} #{pastel.bold(status.tool.label)} — #{status.tool.purpose}"
+        mark = render_mark(pastel, status)
+        suffix = render_suffix(pastel, status)
+        lines << "  #{mark} #{pastel.bold(status.tool.label)} — #{status.tool.purpose}#{suffix}"
         lines << pastel.dim("      #{status.detail}") if status.detail
       end
 
@@ -130,8 +171,12 @@ module Browsable
 
     private
 
+    # Install commands cover every required tool plus any optional tool the
+    # current project actually needs (e.g. postcss-scss when SCSS is present).
     def install_commands
-      missing.map { |tool| install_command(tool) }.uniq
+      missing.select { |tool| tool.required || needs_tool?(tool) }
+             .map { |tool| install_command(tool) }
+             .uniq
     end
 
     def install_command(tool)
@@ -146,9 +191,38 @@ module Browsable
     def detail_for(tool, present)
       if present
         tool.binary? ? (tool_version(tool) || "installed") : "installed"
-      else
+      elsif tool.required || needs_tool?(tool)
         "not found — #{install_command(tool)}"
+      else
+        "not installed (not needed for this project)"
       end
+    end
+
+    def project_has_kind?(kind)
+      case kind
+      when :scss
+        Dir.glob(File.join(root, "app/assets/stylesheets/**/*.{scss,sass}"),
+                 File::FNM_EXTGLOB).any?
+      else
+        true
+      end
+    end
+
+    # Optional tools that are missing-but-needed get the same red ✗ as required
+    # tools. Optional tools the project doesn't need are shown as a dim "—".
+    def render_mark(pastel, status)
+      return pastel.green("✓") if status.installed?
+      return pastel.red("✗") if status.tool.required || needs_tool?(status.tool)
+
+      pastel.dim("—")
+    end
+
+    def render_suffix(pastel, status)
+      return "" if status.tool.required
+      return pastel.dim("  (optional)") if status.installed?
+      return pastel.yellow("  (optional, but needed for this project)") if needs_tool?(status.tool)
+
+      pastel.dim("  (optional)")
     end
 
     def installed?(tool)

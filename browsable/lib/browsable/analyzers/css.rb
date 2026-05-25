@@ -10,13 +10,26 @@ module Browsable
     # project's target. browsable supplies the config; stylelint (and its
     # bundled caniuse data) does the actual compatibility reasoning.
     class CSS < Base
+      # Extensions that stylelint cannot parse with its default PostCSS
+      # syntax. We route them through postcss-scss when any are present.
+      SCSS_EXTENSIONS = %w[.scss .sass].freeze
+
+      def self.scss_like?(file)
+        SCSS_EXTENSIONS.include?(File.extname(file).downcase)
+      end
+
       def required_tools = ["stylelint"]
 
       def analyze(files)
         return [] if files.empty?
 
         argv = ["stylelint", "--config", write_stylelintrc,
-                "--formatter", "json", *files]
+                "--formatter", "json"]
+        # SCSS is a strict superset of CSS for the constructs we audit; running
+        # plain .css through postcss-scss is safe, so one invocation covers
+        # mixed inputs as long as any SCSS-like file is present.
+        argv.push("--customSyntax", "postcss-scss") if files.any? { |f| self.class.scss_like?(f) }
+        argv.concat(files)
         parse(shell_out(argv, dry_run_key: "BROWSABLE_DRY_RUN_CSS"))
       end
 

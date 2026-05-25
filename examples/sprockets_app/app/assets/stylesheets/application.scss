@@ -1,0 +1,30 @@
+/*
+ * SCSS entry point. The `//= require` directives at the top are Sprockets'
+ * manifest format and are simply comments — stylelint treats them as such.
+ * browsable does not parse the manifest; it just analyzes whichever files
+ * the source-discovery globs find on disk.
+ *
+ *= require_tree .
+ *= require_self
+ */
+
+$accent: hsl(220, 80%, 50%);
+
+.card {
+  // SCSS nesting + a `:has()` selector that stylelint can still flag against
+  // older browser targets.
+  &:has(> .card__media) {
+    display: grid;
+    gap: 1rem;
+    container-type: inline-size;
+  }
+
+  aspect-ratio: 16 / 9;
+  border-color: $accent;
+}
+
+@container (min-width: 30rem) {
+  .card {
+    grid-template-columns: 1fr 2fr;
+  }
+}

@@ -31,6 +31,7 @@ The name is a play on Rails 8's `allow_browser` controller API. Instead of *decl
 - [CLI reference](#cli-reference)
 - [Configuration](#configuration)
 - [How it works](#how-it-works)
+- [Asset pipelines](#asset-pipelines)
 - [Runtime auditing (test-suite mode)](#runtime-auditing-test-suite-mode)
 - [Per-controller policies](#per-controller-and-per-action-policies)
 - [Suggested policy fixes](#suggested-allow_browser-fix)
@@ -115,6 +116,7 @@ Browsable shells out to a few external tools that live globally on your machine:
 | `node` | JavaScript runtime for `stylelint` & `eslint` | Yes |
 | `stylelint` | CSS compatibility analysis | Yes (CSS audits) |
 | `eslint` + `eslint-plugin-compat` | JavaScript compatibility analysis | Yes (JS audits) |
+| `postcss-scss` | Lets `stylelint` parse SCSS sources | Optional (SCSS audits only) |
 | `browserslist` | Live resolution of `defaults` queries | Optional |
 | `herb` | ERB parsing | Bundled (gem dep) |
 
@@ -255,6 +257,37 @@ When an audit finds errors that are purely a version conflict — your code need
 It's a suggestion, not an instruction. Tightening the policy is one fix; changing the code (a fallback, a `@supports` rule) is another. **Browsable reports — you decide.**
 
 The suggestion is derived from HTML/ERB findings, which carry exact version data. It also appears in `--json` output as `suggested_policy` and as a GitHub Actions notice.
+
+## Asset pipelines
+
+Browsable's audit pipeline (sources → analyzers → report) is **pipeline-agnostic**: the analyzers don't care how Rails assembles your assets. Only the static-mode source-discovery layer needs to know where to look.
+
+| Pipeline | Static-mode support | What gets discovered |
+| --- | --- | --- |
+| **Propshaft** *(primary target)* | Full | `app/javascript/**`, `app/assets/stylesheets/**`, `app/assets/builds/**`, importmap pins |
+| **Sprockets** | Full | `app/assets/javascripts/**`, `app/assets/stylesheets/**` (incl. `.scss`) |
+| **Both (migration)** | Full — Sprockets discovery wins | Superset of both layouts |
+| **Neither** | Best-effort | Whatever the default globs find on disk |
+
+The detected pipeline appears in the audit header (e.g. `pipeline: sprockets`) and as a top-level field in `--json` output (`"pipeline": "sprockets"`). Detection prefers a live `defined?(Sprockets)` / `defined?(Propshaft)` check (set by the railtie inside a Rails process) and falls back to your `Gemfile.lock` for standalone CLI runs.
+
+### SCSS audits
+
+SCSS files (`.scss`) are routed to stylelint with `--customSyntax postcss-scss`. Install the parser globally:
+
+```bash
+npm install -g postcss-scss
+```
+
+`browsable doctor` flags `postcss-scss` as missing **only when** the project actually has SCSS files. Without it, SCSS files are still analyzed — but as plain CSS, so SCSS-specific syntax (nested selectors, variables) may produce parse warnings.
+
+### What is not analyzed
+
+- **CoffeeScript** (`*.coffee`) — no static-mode support.
+- **ERB-templated JS/CSS** (`*.js.erb`, `*.css.erb`) — only the literal source is read; the ERB is not expanded.
+- **Indented Sass** (`*.sass`) — discovered, but `postcss-scss` parses braced SCSS, not the indented dialect.
+
+These are documented limitations of static mode. **Runtime mode** (below) sidesteps them entirely by reading the HTML, CSS, and JS that Rails actually renders during a test run — so any pipeline, preprocessor, or templating that ends up serving real content is covered.
 
 ## Runtime auditing (test-suite mode)
 

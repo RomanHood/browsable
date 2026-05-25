@@ -61,7 +61,7 @@ module Browsable
     option :fix, type: :boolean, default: false,
                  desc: "Attempt to install missing dependencies via brew/npm"
     def doctor
-      doc = Doctor.new
+      doc = Doctor.new(root: Dir.pwd)
       puts doc.render(color: color?)
 
       if options[:fix] && !doc.ok?
@@ -172,11 +172,14 @@ module Browsable
     # --- pipeline ------------------------------------------------------------
 
     def run_audit(root:, config:, target:, file_list: nil)
-      available = Doctor.new.available_kinds
+      doctor = Doctor.new(root: root)
+      available = doctor.available_kinds
       skips = []
       files_by_kind = file_list ? route_files(file_list) : discover_files(root: root, config: config)
 
       collect_importmap(root: root, config: config, files_by_kind: files_by_kind, skips: skips) if file_list.nil?
+
+      check_scss_tooling!(doctor: doctor, files_by_kind: files_by_kind, skips: skips)
 
       findings = []
       ANALYZERS.each do |kind, analyzer_class|
@@ -212,7 +215,22 @@ module Browsable
       policies = file_list ? [] : PolicyScanner.call(root)
 
       Report.new(findings: findings, skips: skips, notes: notes, policies: policies,
-                 target: target, root: root, config_file: config.config_file)
+                 target: target, root: root, config_file: config.config_file,
+                 pipeline: AssetPipeline.detect(root: root).name)
+    end
+
+    # Warn (and skip the SCSS subset) when SCSS files were discovered but
+    # postcss-scss — the syntax stylelint needs to parse them — is missing.
+    def check_scss_tooling!(doctor:, files_by_kind:, skips:)
+      css_files = files_by_kind[:css] || []
+      return unless css_files.any? { |file| Analyzers::CSS.scss_like?(file) }
+      return if doctor.postcss_scss_installed?
+
+      skips << Report::Skip.new(
+        kind: :scss,
+        reason: "postcss-scss not found — SCSS files will be analyzed as plain CSS. " \
+                "Run `browsable doctor` for setup instructions."
+      )
     end
 
     def collect_importmap(root:, config:, files_by_kind:, skips:)
@@ -253,10 +271,10 @@ module Browsable
       buckets = { css: [], erb: [], html: [], js: [] }
       files.each do |file|
         case File.extname(file).downcase
-        when ".css", ".scss" then buckets[:css] << file
-        when ".js", ".mjs"   then buckets[:js] << file
-        when ".erb"          then buckets[:erb] << file
-        when ".html", ".htm" then buckets[:html] << file
+        when ".css", ".scss", ".sass" then buckets[:css] << file
+        when ".js", ".mjs"            then buckets[:js] << file
+        when ".erb"                   then buckets[:erb] << file
+        when ".html", ".htm"          then buckets[:html] << file
         end
         # TODO(v0.2): route Ruby view components (app/components/**/*.rb).
       end

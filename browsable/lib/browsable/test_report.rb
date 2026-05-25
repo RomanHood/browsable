@@ -69,7 +69,8 @@ module Browsable
         policies: PolicyScanner.call(root),
         target: batch_target,
         root: root,
-        config_file: config.config_file
+        config_file: config.config_file,
+        pipeline: AssetPipeline.detect(root: root).name
       )
     end
 

@@ -15,14 +15,16 @@ module Browsable
     # `bumps` maps each raised browser to { from:, to: }.
     Suggestion = Data.define(:line, :bumps)
 
-    attr_reader :findings, :skips, :notes, :policies, :target, :root, :config_file
+    attr_reader :findings, :skips, :notes, :policies, :target, :root, :config_file, :pipeline
 
     # @param notes [Array<String>] caveats about the run itself (e.g. a target
     #   that could not be inferred) — distinct from per-file findings.
     # @param policies [Array<PolicyScanner::Policy>] every allow_browser callsite
     #   discovered across the app's controllers — the policy landscape.
+    # @param pipeline [String, nil] the detected asset pipeline
+    #   ("propshaft", "sprockets", "sprockets+propshaft", or "none").
     def initialize(findings: [], skips: [], notes: [], policies: [],
-                   target: nil, root: nil, config_file: nil)
+                   target: nil, root: nil, config_file: nil, pipeline: nil)
       @findings = findings
       @skips = skips
       @notes = notes
@@ -30,6 +32,7 @@ module Browsable
       @target = target
       @root = root
       @config_file = config_file
+      @pipeline = pipeline
     end
 
     def errors   = findings.select(&:error?)
@@ -74,6 +77,7 @@ module Browsable
     def as_json
       {
         target: target&.as_json,
+        pipeline: pipeline,
         notes: notes,
         summary: {
           errors: errors.size,
