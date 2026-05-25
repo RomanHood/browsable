@@ -5,9 +5,9 @@ All notable changes to the `browsable` gem are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.0] - 2026-05-25
 
-### Added — v0.2: Runtime response auditing
+### Added — Runtime response auditing
 
 - **Runtime mode.** A Rack middleware (`Browsable::Middleware`) observes HTML
   responses during a test run, records the controller#action, the effective
